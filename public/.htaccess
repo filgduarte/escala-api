@@ -1,0 +1,21 @@
+# Habilita reescrita de URL
+RewriteEngine On
+RewriteBase /escala-api/public/
+
+# Redireciona tudo para index.php, exceto arquivos e diretórios reais
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Permite CORS para requisições externas (ex: frontend separado)
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PATCH, DELETE"
+    Header set Access-Control-Allow-Headers "Authorization, Content-Type"
+</IfModule>
+
+# Segurança: impede acesso a arquivos sensíveis
+<FilesMatch "\.(env|htaccess|ini|log|sh|sql|bak|swp)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
