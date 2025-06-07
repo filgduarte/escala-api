@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../core/AbstractCrudController.php';
+require_once __DIR__ . '/../core/AbstractCRUDController.php';
 
 class AvailabilityController extends AbstractCrudController
 {
