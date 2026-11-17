@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 header('Content-Type: application/json');
 
 $envPath = realpath(__DIR__ . '/../.env');
@@ -46,7 +48,6 @@ Router::add('DELETE', '/instrumentos',            ['InstrumentController', 'dele
 // Availabilities
 Router::add('POST',   '/disponibilidades',        ['AvailabilityController', 'create'],      auth: true);
 Router::add('GET',    '/disponibilidades',        ['AvailabilityController', 'read'],        auth: true);
-Router::add('GET',    '/disponibilidades/{id}',   ['AvailabilityController', 'read'],        auth: true);
 Router::add('GET',    '/disponibilidades/{date}', ['AvailabilityController', 'readByDate'],  auth: true);
 Router::add('DELETE', '/disponibilidades',        ['AvailabilityController', 'delete'],      auth: true);
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/JsonBody.php';
 
 abstract class AbstractCRUDController
 {
@@ -9,11 +10,13 @@ abstract class AbstractCRUDController
     public static function create()
     {
         global $pdo;
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (empty($data)) return self::jsonError('Empty input');
-
-        $pdo->beginTransaction();
         try {
+            $data = JsonBody::read();
+            foreach ($data as $item) {
+                static::validateItem($item);
+            }
+
+            $pdo->beginTransaction();
             $values = [];
             $params = [];
 
@@ -34,9 +37,17 @@ abstract class AbstractCRUDController
             $pdo->commit();
 
             echo json_encode(['ids' => $ids]);
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            self::jsonError('Insert failed:' . $e, 500);
+        } catch (InvalidArgumentException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            self::jsonError($e->getMessage());
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log((string) $e);
+            self::jsonError('Internal server error', 500);
         }
     }
 
@@ -59,48 +70,80 @@ abstract class AbstractCRUDController
     public static function update()
     {
         global $pdo;
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (empty($data)) return self::jsonError('Empty input');
-
-        $pdo->beginTransaction();
         try {
+            $data = JsonBody::read();
             foreach ($data as $item) {
-                $setClause = [];
+                static::validateItem($item, true);
+            }
+
+            $pdo->beginTransaction();
+            foreach ($data as $item) {
+                $fieldsToUpdate = [];
                 $params = [];
 
                 foreach (static::$fields as $field) {
-                    $setClause[] = "$field = ?";
-                    $params[] = $item[$field] ?? null;
-                }
+                    if (!array_key_exists($field, $item)) continue;
 
-                $params[] = $item['id'];
-                $sql = "UPDATE " . static::$table . " SET " . implode(', ', $setClause) . " WHERE id = ?";
-                $pdo->prepare($sql)->execute($params);
+                    $fieldsToUpdate[] = "$field = ?";
+                    $params[] = $item[$field];
+                }
+                if (!empty($fieldsToUpdate)) {
+                    $params[] = $item['id'];
+                    $sql = "UPDATE " . static::$table . " SET " . implode(', ', $fieldsToUpdate) . " WHERE id = ?";
+                    $pdo->prepare($sql)->execute($params);
+                }
             }
             $pdo->commit();
             echo json_encode(['status' => 'updated']);
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            self::jsonError('Update failed', 500);
+        } catch (InvalidArgumentException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            self::jsonError($e->getMessage());
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log((string) $e);
+            self::jsonError('Internal server error', 500);
         }
     }
 
     public static function delete()
     {
         global $pdo;
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (empty($data)) return self::jsonError('Empty input');
-
-        $pdo->beginTransaction();
         try {
+            $data = JsonBody::read('ids');
+            $pdo->beginTransaction();
             $placeholders = implode(',', array_fill(0, count($data), '?'));
             $sql = "DELETE FROM " . static::$table . " WHERE id IN ($placeholders)";
             $pdo->prepare($sql)->execute($data);
             $pdo->commit();
             echo json_encode(['status' => 'deleted']);
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            self::jsonError('Delete failed', 500);
+        } catch (InvalidArgumentException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            self::jsonError($e->getMessage());
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log((string) $e);
+            self::jsonError('Internal server error', 500);
+        }
+    }
+
+    protected static function validateItem(array $item, bool $update = false): void
+    {
+        if ($update && (!isset($item['id']) || !is_int($item['id']) || $item['id'] <= 0)) {
+            throw new InvalidArgumentException('Item id must be a positive integer');
+        }
+
+        foreach (static::$fields as $field) {
+            if (array_key_exists($field, $item) && $item[$field] !== null && !is_scalar($item[$field])) {
+                throw new InvalidArgumentException("Invalid type for $field");
+            }
         }
     }
 
