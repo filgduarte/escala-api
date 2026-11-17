@@ -1,4 +1,4 @@
-# Escala API
+# Músicos Voluntários API
 
 API PHP para cadastro de músicos, instrumentos e disponibilidades, com autenticação JWT e persistência em MySQL/MariaDB.
 
@@ -69,6 +69,33 @@ As tabelas usam InnoDB para permitir transações. As chaves estrangeiras impede
 O comando usa `IF NOT EXISTS`: pode ser repetido sem apagar registros ou recriar tabelas. Ele é uma instalação inicial, não um sistema de migrations: não modifica a estrutura de tabelas que já existam nem garante que estruturas antigas correspondam ao esquema. MySQL confirma comandos DDL implicitamente; em caso de erro, corrija a causa e execute novamente para criar as tabelas restantes.
 
 Uma execução bem-sucedida retorna código `0`; erros retornam código `1`. Se a conexão falhar, confira se o servidor está ativo e se as credenciais têm as permissões necessárias.
+
+### Falha de conexão: MySQL 2002 ou 2003
+
+O comando cria o banco dentro de um servidor existente. Ele não instala nem inicia o serviço MySQL/MariaDB. Esses códigos indicam que a conexão ao endereço e à porta configurados não foi estabelecida.
+
+No Windows, confira os serviços disponíveis:
+
+```powershell
+Get-Service -Name '*mysql*','*maria*'
+```
+
+Para iniciar um serviço chamado `MySQL80`, execute em um PowerShell como administrador:
+
+```powershell
+Start-Service MySQL80
+```
+
+Se utilizar o MySQL do XAMPP, inicie o módulo MySQL pelo painel do XAMPP. Escolha a instalação correspondente às credenciais do seu `.env`.
+
+Depois de iniciar o servidor, confira a porta configurada e execute novamente:
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 3306
+composer db:setup
+```
+
+Substitua endereço e porta pelos valores de `DB_HOST` e `DB_PORT`, quando diferentes. `TcpTestSucceeded: True` indica que há um servidor aceitando conexões nessa porta; a autenticação será verificada pelo comando de preparação.
 
 ## Executar localmente no Windows
 

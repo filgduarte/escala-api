@@ -24,7 +24,9 @@ abstract class AbstractCRUDController
                 $placeholders = [];
                 foreach (static::$fields as $field) {
                     $placeholders[] = '?';
-                    $params[] = $item[$field] ?? null;
+                    $value = $item[$field] ?? null;
+                    // execute() binds array values as strings; false would become ''.
+                    $params[] = is_bool($value) ? (int) $value : $value;
                 }
                 $values[] = '(' . implode(',', $placeholders) . ')';
             }
@@ -85,7 +87,8 @@ abstract class AbstractCRUDController
                     if (!array_key_exists($field, $item)) continue;
 
                     $fieldsToUpdate[] = "$field = ?";
-                    $params[] = $item[$field];
+                    $value = $item[$field];
+                    $params[] = is_bool($value) ? (int) $value : $value;
                 }
                 if (!empty($fieldsToUpdate)) {
                     $params[] = $item['id'];

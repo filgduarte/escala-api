@@ -94,7 +94,20 @@ try {
     fwrite(STDOUT, "Tabelas: musicians, instruments, musician_instruments, availabilities.\n");
     exit(0);
 } catch (PDOException $e) {
-    fwrite(STDERR, "Falha no MySQL (SQLSTATE {$e->getCode()}). Verifique a conexao, as permissoes de criacao e a compatibilidade de tabelas existentes.\n");
+    $sqlState = $e->errorInfo[0] ?? (string) $e->getCode();
+    $driverCode = (int) ($e->errorInfo[1] ?? 0);
+    $details = "SQLSTATE $sqlState, MySQL $driverCode";
+
+    if (in_array($driverCode, [2002, 2003], true)) {
+        fwrite(STDERR, "Nao foi possivel conectar ao MySQL em {$config['DB_HOST']}:$port ($details).\n");
+        fwrite(STDERR, "Inicie o servidor MySQL/MariaDB e confira DB_HOST e DB_PORT no arquivo de ambiente.\n");
+    } elseif ($driverCode === 1045) {
+        fwrite(STDERR, "Autenticacao recusada pelo MySQL ($details). Confira DB_USER e DB_PASS no arquivo de ambiente.\n");
+    } elseif ($driverCode === 1044) {
+        fwrite(STDERR, "Acesso ao banco recusado pelo MySQL ($details). Confira as permissoes do usuario configurado.\n");
+    } else {
+        fwrite(STDERR, "Falha no MySQL ($details). Verifique as permissoes de criacao e a compatibilidade de tabelas existentes.\n");
+    }
     exit(1);
 } catch (Throwable $e) {
     fwrite(STDERR, $e->getMessage() . "\n");
