@@ -22,13 +22,14 @@ if (!isset($_ENV['DB_HOST'], $_ENV['DB_NAME'], $_ENV['DB_USER'], $_ENV['DB_PASS'
 
 // Pega valores do .env
 $host    = $_ENV['DB_HOST'];
+$port    = $_ENV['DB_PORT'] ?? '3306';
 $dbname  = $_ENV['DB_NAME'];
 $user    = $_ENV['DB_USER'];
 $pass    = $_ENV['DB_PASS'];
 $charset = $_ENV['DB_CHARSET'];
 
 // Conexão PDO
-$dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
+$dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

@@ -1,5 +1,8 @@
 {
     "require": {
         "firebase/php-jwt": "^6.11"
+    },
+    "scripts": {
+        "db:setup": "@php scripts/setup-database.php"
     }
 }
